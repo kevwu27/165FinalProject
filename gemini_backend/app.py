@@ -12,12 +12,12 @@ def ask():
 
     print(f"[Flask] Received input: {user_input}")
     try:
-        response_text = get_gemini_response(user_input)
-        print(f"[Flask] Gemini response: {response_text}")
-        return jsonify({"response": response_text})
+        response, emotion = get_gemini_response(user_input)
+        
+        return jsonify({"response": response, "emotion": emotion})
     except Exception as e:
         print(f"[Flask] ERROR calling Gemini: {e}")
-        return jsonify({"response": "Gemini API call failed"}), 403
+        return jsonify({"response": "Gemini API call failed", "emotion": emotion}), 403
 
 if __name__ == "__main__":
     app.run(host="localhost", port=5001)

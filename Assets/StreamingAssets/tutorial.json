@@ -1,0 +1,18 @@
+[
+  {
+    "text": "Welcome to Checkers! I'm going to teach you how to play.",
+    "animation": "Idle"
+  },
+  {
+    "text": "Each piece moves diagonally forward, one square at a time.",
+    "animation": "Pointing"
+  },
+  {
+    "text": "You can capture an opponent's piece by jumping over it.",
+    "animation": "Gesturing"
+  },
+  {
+    "text": "Try moving a piece to the highlighted square!",
+    "animation": "Cards"
+  }
+]
