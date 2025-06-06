@@ -7,25 +7,15 @@ public class GrabPiece : MonoBehaviour
     public Transform rightHandTransform;
     public LineRenderer lineRenderer;
     public float rayLength = 40f;
-    public LayerMask pieceLayer;
+    public LayerMask blackPieceLayer;
 
-    public GameObject board; // assign in Inspector
-    private Bounds boardBounds;
 
     private GameObject selectedPiece = null;
     private Vector3 pieceOffset;
-    private float lockedYHeight;
+    private Vector3 originalSnappedPosition;
 
     void Start()
     {
-        if (board != null)
-        {
-            Collider boardCol = board.GetComponent<Collider>();
-            if (boardCol != null)
-            {
-                boardBounds = boardCol.bounds;
-            }
-        }
     }
 
     void Update()
@@ -42,18 +32,20 @@ public class GrabPiece : MonoBehaviour
             if (selectedPiece == null)
             {
                 RaycastHit hit;
-                if (Physics.Raycast(rayStart, rayDir, out hit, rayLength, pieceLayer))
+                if (Physics.Raycast(rayStart, rayDir, out hit, rayLength, blackPieceLayer))
                 {
                     selectedPiece = hit.collider.gameObject;
                     pieceOffset = selectedPiece.transform.position - hit.point;
-                    lockedYHeight = selectedPiece.transform.position.y; // lock Y once
+                    originalSnappedPosition = CheckersLogic.Instance.BoardToWorld(
+                        CheckersLogic.Instance.WorldToBoard(selectedPiece.transform.position).row,
+                        CheckersLogic.Instance.WorldToBoard(selectedPiece.transform.position).col
+                    );
                 }
             }
             else
             {
                 RaycastHit hit;
                 Vector3 targetPos;
-
                 if (Physics.Raycast(rayStart, rayDir, out hit, rayLength))
                 {
                     targetPos = hit.point + pieceOffset;
@@ -62,17 +54,20 @@ public class GrabPiece : MonoBehaviour
                 {
                     targetPos = rayStart + rayDir * rayLength;
                 }
-
-                // Clamp X and Z to stay inside the board bounds
-                targetPos.x = Mathf.Clamp(targetPos.x, boardBounds.min.x, boardBounds.max.x);
-                targetPos.z = Mathf.Clamp(targetPos.z, boardBounds.min.z, boardBounds.max.z);
-                targetPos.y = lockedYHeight; // keep Y steady — no bouncing
-
-                selectedPiece.transform.position = targetPos;
+                var (row, col) = CheckersLogic.Instance.WorldToBoard(targetPos);
+                selectedPiece.transform.position = CheckersLogic.Instance.BoardToWorld(row, col);
             }
         }
-        else
+        else if (selectedPiece != null)
         {
+            if(CheckersLogic.Instance.IsValidMove(originalSnappedPosition, selectedPiece.transform.position))
+            {
+                CheckersLogic.Instance.ApplyMove(originalSnappedPosition, selectedPiece.transform.position);
+            }
+            else
+            {
+                selectedPiece.transform.position = originalSnappedPosition;
+            }
             selectedPiece = null;
         }
     }
