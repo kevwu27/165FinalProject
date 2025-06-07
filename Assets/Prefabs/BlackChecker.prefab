@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 2261725679298650586}
   - component: {fileID: 4898439526462266386}
   - component: {fileID: 6772872797122825976}
+  - component: {fileID: 5258676487960076905}
   m_Layer: 6
   m_Name: BlackChecker
   m_TagString: Untagged
@@ -106,3 +107,17 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4540225462609144077, guid: 23ee2a3797c4c65429853aabf6366ec6, type: 3}
+--- !u!114 &5258676487960076905
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6518496491053717882}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32119d6568f3968408e6cd6d4c225944, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  defaultMaterial: {fileID: 2100000, guid: c73fb4ecc3d50304c8658d4476137208, type: 2}
+  highlightMaterial: {fileID: 2100000, guid: 680e446e17172724aa32f1168e03eb0f, type: 2}

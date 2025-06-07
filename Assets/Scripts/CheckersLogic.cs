@@ -161,7 +161,10 @@ public class CheckersLogic : MonoBehaviour
             if (jumpedPiece != PieceType.Empty &&
                 Mathf.Sign((int)jumpedPiece) != Mathf.Sign((int)movingPiece))
             {
-                return true;
+                if (isKing || rowDelta == dir * 2)
+                {
+                    return true;
+                }
             }
         }
 
