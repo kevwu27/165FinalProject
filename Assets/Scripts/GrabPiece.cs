@@ -20,6 +20,9 @@ public class GrabPiece : MonoBehaviour
 
     void Update()
     {
+        if (CheckersLogic.Instance.currentTurn != PlayerTurn.Black)
+            return;
+
         Vector3 rayStart = rightHandTransform.position;
         Vector3 rayDir = rightHandTransform.forward;
         lineRenderer.SetPosition(0, rayStart);
@@ -63,6 +66,9 @@ public class GrabPiece : MonoBehaviour
             if(CheckersLogic.Instance.IsValidMove(originalSnappedPosition, selectedPiece.transform.position))
             {
                 CheckersLogic.Instance.ApplyMove(originalSnappedPosition, selectedPiece.transform.position);
+
+                CheckersLogic.Instance.currentTurn = PlayerTurn.White;
+                StartCoroutine(CheckersLogic.Instance.MakeAIMove());
             }
             else
             {

@@ -308,7 +308,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &17828759
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2312,6 +2312,8 @@ MonoBehaviour:
   - {fileID: 734172003}
   - {fileID: 760887386}
   board: {fileID: 2125373949}
+  currentTurn: 0
+  kingVisualPrefab: {fileID: 3282689748168750775, guid: aa80d760d36372f43b3ef441d91df798, type: 3}
   boardEdgeMarginPercent: 0.01
 --- !u!1 &1744965982
 GameObject:
