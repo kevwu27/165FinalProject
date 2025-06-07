@@ -3,25 +3,23 @@ using UnityEngine;
 public class PlayerMovement : MonoBehaviour
 {
     public float moveSpeed = 2.0f;
-    public Transform cameraTransform;  // Main camera from OVRCameraRig
+    public float rotateSpeed = 60f;
+    public Transform rigRoot;  // Main camera from OVRCameraRig
 
     void Update()
     {
-        // Get joystick input (left thumbstick)
-        Vector2 input = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
+        // LEFT JOYSTICK MOVEMENT (assumes primary hand = left)
+        Vector2 moveInput = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
+        Vector3 move = new Vector3(moveInput.x, 0, moveInput.y);
+        move = Camera.main.transform.TransformDirection(move); // move relative to headset view
+        move.y = 0; // lock to ground
+        rigRoot.position += move * moveSpeed * Time.deltaTime;
 
-        // Move in the direction the headset is facing
-        Vector3 forward = cameraTransform.forward;
-        Vector3 right = cameraTransform.right;
-
-        // Flatten to horizontal plane
-        forward.y = 0;
-        right.y = 0;
-        forward.Normalize();
-        right.Normalize();
-
-        // Combine direction
-        Vector3 moveDir = forward * input.y + right * input.x;
-        transform.position += moveDir * moveSpeed * Time.deltaTime;
+        // RIGHT JOYSTICK ROTATION
+        float rotateInput = OVRInput.Get(OVRInput.Axis2D.SecondaryThumbstick).x;
+        if (Mathf.Abs(rotateInput) > 0.1f) // add deadzone
+        {
+            rigRoot.Rotate(Vector3.up, rotateInput * rotateSpeed * Time.deltaTime);
+        }
     }
 }

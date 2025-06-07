@@ -18,12 +18,14 @@ public class TutorialManager : MonoBehaviour
     public Button nextButton;
     private bool isAnimating = false;
 
-    void Start()
+    [Header("Gameplay")]
+    public GrabPiece grabPieceScript;
+    public IntroMenu introMenu;
+
+    public void StartTutorial()
     {
         LoadTutorial();
-        // ShowCurrentStep();
         StartCoroutine(InitializeTutorial());
-        // StartCoroutine(PlayTutorial());
     }
 
     // Loads in the json file
@@ -99,6 +101,15 @@ public class TutorialManager : MonoBehaviour
 
             currentStep++;
         }
+
+        // After tutorial finishes
+        if (grabPieceScript != null)
+            grabPieceScript.enabled = true;
+
+        CheckersLogic.Instance.currentTurn = PlayerTurn.Black;
+
+        if (introMenu != null)
+            introMenu.gameObject.SetActive(false); // optionally hide menu if still around
 
         Debug.Log("Tutorial finished!");
         dialogueText.text = "";

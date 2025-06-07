@@ -15,6 +15,7 @@ public enum PlayerTurn
     Black,  // Human
     White   // AI
 }
+
 public class CheckersLogic : MonoBehaviour
 {
     public static CheckersLogic Instance;
@@ -22,15 +23,21 @@ public class CheckersLogic : MonoBehaviour
     private float cellWidth;
     private float cellDepth;
 
-    public List<GameObject> whitePieces;   
-    public List<GameObject> blackPieces; 
-    
     public GameObject board;
 
     public PlayerTurn currentTurn = PlayerTurn.Black;
     private Dictionary<GameObject, (int row, int col)> piecePositions = new();
 
-    public GameObject kingVisualPrefab;
+    public GameObject blackKingPrefab;
+    public GameObject whiteKingPrefab;
+    public GameObject blackCheckerPrefab;
+    public GameObject whiteCheckerPrefab;
+
+    public RoundEndMenu roundEndMenu;
+    public bool gameOver = false;
+
+    private List<GameObject> blackPieces = new();
+    private List<GameObject> whitePieces = new();
 
     private void Awake()
     {
@@ -59,37 +66,49 @@ public class CheckersLogic : MonoBehaviour
         }
         SpawnPieces();
     }
+
     void SpawnPieces()
     {
         piecePositions.Clear();
-        int whiteIndex = 0;
-        int blackIndex = 0;
+        blackPieces.Clear();
+        whitePieces.Clear();
 
         for (int row = 0; row < 8; row++)
         {
             for (int col = 0; col < 8; col++)
             {
-                if ((row + col) % 2 == 1)
+                if ((row + col) % 2 == 1) // valid checker cell
                 {
-                    Vector3 worldPos = CheckersLogic.Instance.BoardToWorld(row, col);
+                    Vector3 worldPos = BoardToWorld(row, col);
 
-                    if (row <= 2 && blackIndex < blackPieces.Count)
+                    if (row <= 2)
                     {
-                        GameObject piece = blackPieces[blackIndex++];
-                        piece.transform.position = worldPos;
+                        GameObject blackPiece = Instantiate(blackCheckerPrefab, worldPos, Quaternion.Euler(-90, 0, 0));
+                        blackPiece.tag = "CheckersPieceBlack";
+                        blackPieces.Add(blackPiece);
                         boardState[row, col] = PieceType.Black;
-                        piecePositions[piece] = (row, col);
+                        piecePositions[blackPiece] = (row, col);
                     }
-                    else if (row >= 5 && whiteIndex < whitePieces.Count)
+                    else if (row >= 5)
                     {
-                        GameObject piece = whitePieces[whiteIndex++];
-                        piece.transform.position = worldPos;
+                        GameObject whitePiece = Instantiate(whiteCheckerPrefab, worldPos, Quaternion.Euler(-90, 0, 0));
+                        whitePiece.tag = "CheckersPieceWhite";
+                        whitePieces.Add(whitePiece);
                         boardState[row, col] = PieceType.White;
-                        piecePositions[piece] = (row, col);
+                        piecePositions[whitePiece] = (row, col);
                     }
+                    else
+                    {
+                        boardState[row, col] = PieceType.Empty;
+                    }
+                }
+                else
+                {
+                    boardState[row, col] = PieceType.Empty;
                 }
             }
         }
+
         Debug.Log("Spawn complete.");
     }
 
@@ -163,6 +182,7 @@ public class CheckersLogic : MonoBehaviour
 
     public void ApplyMove(Vector3 fromWorldPos, Vector3 toWorldPos)
     {
+        if (gameOver) return;
         var (fromRow, fromCol) = WorldToBoard(fromWorldPos);
         var (toRow, toCol) = WorldToBoard(toWorldPos);
         PieceType movingPiece = boardState[fromRow, fromCol];
@@ -225,6 +245,15 @@ public class CheckersLogic : MonoBehaviour
 
         Debug.Log($"Moved piece from ({fromRow}, {fromCol}) to ({toRow}, {toCol})");
         PrintBoard();
+
+        if (blackPieces.Count == 0 || whitePieces.Count == 0)
+        {
+            gameOver = true;
+            roundEndMenu.menuCanvas.SetActive(true);
+            bool playerWon = (whitePieces.Count == 0);
+            roundEndMenu.ShowEndScreen(playerWon);
+            Debug.Log($"menuCanvas active? {roundEndMenu.menuCanvas.activeSelf}, menuAnimator exists? {roundEndMenu.menuAnimator != null}");
+        }
     }
 
 
@@ -297,20 +326,41 @@ public class CheckersLogic : MonoBehaviour
     //     PrintBoard();
     // }
 
-    private void PromoteToKing(GameObject piece)
+    private void PromoteToKing(GameObject originalPiece)
     {
-        if (kingVisualPrefab == null)
+        if (!piecePositions.TryGetValue(originalPiece, out var pos))
         {
-            Debug.LogWarning("No kingVisualPrefab assigned!");
+            Debug.LogWarning("Could not find piece in position map.");
             return;
         }
 
-        float height = piece.GetComponent<Collider>().bounds.size.y;
+        int row = pos.row;
+        int col = pos.col;
 
-        GameObject crown = Instantiate(kingVisualPrefab, piece.transform);
-        crown.transform.localPosition = new Vector3(0, height * 1.05f, 0); // place it on top
-        crown.name = piece.name + "_KingVisual";
+        GameObject kingPrefab = (boardState[row, col] == PieceType.BlackKing) ? blackKingPrefab : whiteKingPrefab;
+        if (kingPrefab == null)
+        {
+            Debug.LogWarning("Missing king prefab reference!");
+            return;
+        }
+
+        // Spawn king in same position
+        Vector3 kingPos = BoardToWorld(row, col);
+        Quaternion kingRot = originalPiece.transform.rotation;
+        GameObject kingPiece = Instantiate(kingPrefab, kingPos, kingRot);
+
+        // Replace in the right list
+        List<GameObject> pieceList = boardState[row, col] > 0 ? blackPieces : whitePieces;
+        pieceList.Remove(originalPiece);
+        pieceList.Add(kingPiece);
+
+        // Update position tracking
+        piecePositions.Remove(originalPiece);
+        piecePositions[kingPiece] = (row, col);
+
+        Destroy(originalPiece);
     }
+
 
 
     // private void PromoteToKing(int row, int col, bool isBlack)
@@ -362,42 +412,46 @@ public class CheckersLogic : MonoBehaviour
     {
         yield return new WaitForSeconds(1f); // Delay for realism
 
+        List<(Vector3 from, Vector3 to)> capturingMoves = new();
+        List<(Vector3 from, Vector3 to)> normalMoves = new();
+
         for (int row = 0; row < 8; row++)
         {
             for (int col = 0; col < 8; col++)
             {
-                if (boardState[row, col] == PieceType.White || boardState[row, col] == PieceType.WhiteKing)
+                PieceType piece = boardState[row, col];
+
+                if (piece == PieceType.White || piece == PieceType.WhiteKing)
                 {
-                    // Try basic diagonal moves
-                    for (int dRow = -1; dRow <= 1; dRow += 2)
+                    Vector3 from = BoardToWorld(row, col);
+
+                    int[] dRows = piece == PieceType.White ? new int[] { -1, -2 } : new int[] { -1, 1, -2, 2 };
+                    int[] dCols = new int[] { -1, 1, -2, 2 };
+
+                    foreach (int dRow in dRows)
                     {
-                        for (int dCol = -1; dCol <= 1; dCol += 2)
+                        foreach (int dCol in dCols)
                         {
                             int newRow = row + dRow;
                             int newCol = col + dCol;
-                            if (newRow < 0 || newRow > 7 || newCol < 0 || newCol > 7)
-                                continue;
 
-                            Vector3 from = BoardToWorld(row, col);
+                            if (newRow < 0 || newRow > 7 || newCol < 0 || newCol > 7)
+                            {
+                                continue;
+                            }
+
                             Vector3 to = BoardToWorld(newRow, newCol);
 
                             if (IsValidMove(from, to))
                             {
-                                ApplyMove(from, to);
-
-                                // Move the white GameObject visually
-                                foreach (var white in whitePieces)
+                                if (Mathf.Abs(newRow - row) == 2) // capturing move
                                 {
-                                    var (wRow, wCol) = WorldToBoard(white.transform.position);
-                                    if (wRow == row && wCol == col)
-                                    {
-                                        white.transform.position = to;
-                                        break;
-                                    }
+                                    capturingMoves.Add((from, to));
                                 }
-
-                                currentTurn = PlayerTurn.Black;
-                                yield break;
+                                else
+                                {
+                                    normalMoves.Add((from, to));
+                                }
                             }
                         }
                     }
@@ -405,8 +459,48 @@ public class CheckersLogic : MonoBehaviour
             }
         }
 
-        Debug.Log("AI could not find a valid move.");
+        List<(Vector3 from, Vector3 to)> movePool = capturingMoves.Count > 0 ? capturingMoves : normalMoves;
+
+        if (movePool.Count > 0)
+        {
+            var chosen = movePool[Random.Range(0, movePool.Count)];
+            ApplyMove(chosen.from, chosen.to);
+        }
+        else
+        {
+            Debug.Log("AI could not find a valid move.");
+        }
         currentTurn = PlayerTurn.Black;
     }
 
+    public void RestartGame()
+    {
+        gameOver = false;
+        // 1. Destroy all checker pieces
+        foreach (GameObject piece in blackPieces)
+            Destroy(piece);
+        foreach (GameObject piece in whitePieces)
+            Destroy(piece);
+
+        // 2. Clear lists and position map
+        blackPieces.Clear();
+        whitePieces.Clear();
+        piecePositions.Clear();
+
+        // 3. Clear board state
+        for (int row = 0; row < 8; row++)
+            for (int col = 0; col < 8; col++)
+                boardState[row, col] = PieceType.Empty;
+
+        // 4. Respawn fresh pieces
+        SpawnPieces();
+
+        // 5. Reset turn
+        currentTurn = PlayerTurn.Black;
+        // Reset round end menu animation state
+        roundEndMenu.menuAnimator.Rebind();  // Resets all parameters and states
+
+        Debug.Log("Game restarted.");
+
+    }
 }
