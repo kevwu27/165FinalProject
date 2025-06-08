@@ -1,6 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Meta.WitAi.TTS;
+using Meta.WitAi.TTS.Utilities;
+using Meta.WitAi.TTS.Data;
 
 public enum PieceType
 {
@@ -38,6 +41,9 @@ public class CheckersLogic : MonoBehaviour
 
     private List<GameObject> blackPieces = new();
     private List<GameObject> whitePieces = new();
+
+    public Animator agentAnimator;
+    public TTSSpeaker speaker;
 
     private void Awake()
     {
@@ -166,18 +172,6 @@ public class CheckersLogic : MonoBehaviour
         }
 
         return false;
-
-        // if (isKing)
-        // {
-        //     if (Mathf.Abs(toRow - fromRow) == 1 && Mathf.Abs(toCol - fromCol) == 1)
-        //         return true;
-        // }
-        // else
-        // {
-        //     if (toRow == fromRow + dir && Mathf.Abs(toCol - fromCol) == 1)
-        //         return true;
-        // }
-        // return false;
     }
 
     public void ApplyMove(Vector3 fromWorldPos, Vector3 toWorldPos)
@@ -226,6 +220,24 @@ public class CheckersLogic : MonoBehaviour
                     piecePositions.Remove(enemy);
                     Destroy(enemy);
                     enemyList.RemoveAt(i);
+
+                    agentAnimator.SetBool("ConversationMode", false);
+                    if (currentTurn == PlayerTurn.Black)
+                    {
+                        speaker.Speak("Aww darn, you got me!");
+                        // Player captured AI piece
+                        agentAnimator.SetBool("PlayerGood", true);
+                        StartCoroutine(ResetEmotion("PlayerGood", 5f));
+                    }
+                    else
+                    {   
+                        speaker.Speak("Another one bites the dust.");
+                        // AI captured player piece
+                        agentAnimator.SetBool("AIGood", true);
+                        StartCoroutine(ResetEmotion("AIGood", 5f));
+                    }
+                    
+
                     break;
                 }
             }
@@ -256,75 +268,13 @@ public class CheckersLogic : MonoBehaviour
         }
     }
 
+    IEnumerator ResetEmotion(string paramName, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        agentAnimator.SetBool(paramName, false);
+        agentAnimator.SetBool("ConversationMode", true);
+    }
 
-    // public void ApplyMove(Vector3 fromWorldPos, Vector3 toWorldPos)
-    // {
-    //     var (fromRow, fromCol) = WorldToBoard(fromWorldPos);
-    //     var (toRow, toCol) = WorldToBoard(toWorldPos);
-    //     PieceType movingPiece = boardState[fromRow, fromCol];
-
-    //     boardState[toRow, toCol] = movingPiece;
-    //     boardState[fromRow, fromCol] = PieceType.Empty;
-
-    //     GameObject movedPiece = null;
-    //     List<GameObject> pieceList = movingPiece > 0 ? blackPieces : whitePieces;
-
-    //     foreach (var piece in pieceList)
-    //     {
-    //         var (r, c) = WorldToBoard(piece.transform.position);
-    //         if (r == fromRow && c == fromCol)
-    //         {
-    //             piece.transform.position = BoardToWorld(toRow, toCol);
-    //             movedPiece = piece;
-    //             break;
-    //         }
-    //     }
-
-    //      // Handle capture
-    //     if (Mathf.Abs(toRow - fromRow) == 2 && Mathf.Abs(toCol - fromCol) == 2)
-    //     {
-    //         int jumpedRow = (fromRow + toRow) / 2;
-    //         int jumpedCol = (fromCol + toCol) / 2;
-    //         PieceType captured = boardState[jumpedRow, jumpedCol];
-
-    //         if (captured != PieceType.Empty)
-    //         {
-    //             // Remove visual piece
-    //             List<GameObject> list = captured > 0 ? blackPieces : whitePieces;
-    //             foreach (var piece in list)
-    //             {
-    //                 var (r, c) = WorldToBoard(piece.transform.position);
-    //                 if (r == jumpedRow && c == jumpedCol)
-    //                 {
-    //                     Destroy(piece);
-    //                     list.Remove(piece);
-    //                     break;
-    //                 }
-    //             }
-
-    //             boardState[jumpedRow, jumpedCol] = PieceType.Empty;
-    //         }
-    //     }
-
-    //     // Move the piece
-    //     boardState[toRow, toCol] = boardState[fromRow, fromCol];
-    //     boardState[fromRow, fromCol] = PieceType.Empty;
-
-    //     // Promote to King
-    //     if (movingPiece == PieceType.Black && toRow == 7) 
-    //     {
-    //         boardState[toRow, toCol] = PieceType.BlackKing;
-    //         PromoteToKing(toRow, toCol, true);
-    //     }
-    //     else if (movingPiece == PieceType.White && toRow == 0)
-    //     {
-    //         boardState[toRow, toCol] = PieceType.WhiteKing;
-    //         PromoteToKing(toRow, toCol, false);
-    //     }
-
-    //     Debug.Log($"Moved piece from ({fromRow}, {fromCol}) to ({toRow}, {toCol})");
-    //     PrintBoard();
-    // }
 
     private void PromoteToKing(GameObject originalPiece)
     {
@@ -361,39 +311,7 @@ public class CheckersLogic : MonoBehaviour
         Destroy(originalPiece);
     }
 
-
-
-    // private void PromoteToKing(int row, int col, bool isBlack)
-    // {
-    //     Vector3 basePos = BoardToWorld(row, col);
-    //     List<GameObject> pieceList = isBlack ? blackPieces : whitePieces;
-
-    //     foreach (var piece in pieceList)
-    //     {
-    //         var (r, c) = WorldToBoard(piece.transform.position);
-    //         if (r == row && c == col)
-    //         {
-    //             // Duplicate the piece and place it above the original
-    //             GameObject kingPiece = Instantiate(piece, piece.transform);
-    //             float height = piece.GetComponent<Collider>().bounds.size.y;
-    //             // Vector3 offsetPos = basePos + new Vector3(0, pieceHeight * 1.05f, 0); // adjust Y offset as needed
-    //             kingPiece.transform.localPosition = height * 1.05f;
-
-    //             // Optionally mark/tag the clone
-    //             kingPiece.name = piece.name + "_KingMarker";
-    //             kingPiece.GetComponent<Collider>().enabled = false; // prevent grabbing the crown
-    //             if (kingVisual.TryGetComponent<Rigidbody>(out var rb))
-    //                 rb.isKinematic = true;
-
-    //             // Optional: set different material or color
-    //             // kingPiece.GetComponent<Renderer>().material = kingMaterial;
-
-    //             break;
-    //         }
-    //     }
-    // }
-
-    private void PrintBoard()
+    public string PrintBoard()
     {
         string boardStr = "";
         for (int row = 0; row < 8; row++)
@@ -405,7 +323,8 @@ public class CheckersLogic : MonoBehaviour
             }
             boardStr += "\n";
         }
-        Debug.Log("Board State:\n" + boardStr);
+        // Debug.Log("Board State:\n" + boardStr);
+        return boardStr;
     }
 
     public IEnumerator MakeAIMove()

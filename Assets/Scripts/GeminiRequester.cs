@@ -2,12 +2,17 @@ using UnityEngine;
 using UnityEngine.Networking;
 using System.Collections;
 using TMPro;
+using Meta.WitAi.TTS;
+using Meta.WitAi.TTS.Utilities;
+using Meta.WitAi.TTS.Data;
 
 public class GeminiRequester : MonoBehaviour
 {
     public string serverUrl = "http://localhost:5001/ask";
     public TextMeshProUGUI dialogueText;
     public Animator agentAnimator;
+
+    public TTSSpeaker speaker;
 
     public void SendToGemini(string userInput)
     {
@@ -17,12 +22,15 @@ public class GeminiRequester : MonoBehaviour
 
     IEnumerator PostRequest(string text)
     {
+        string board_state = CheckersLogic.Instance.PrintBoard();
         var input = new RequestData
         {
-            input = text
+            input = text,
+            boardState = board_state
         };
 
         string json = JsonUtility.ToJson(input);
+        Debug.Log(json);
 
         var req = new UnityWebRequest("localhost:5001/ask", "POST");
         byte[] jsonToSend = new System.Text.UTF8Encoding().GetBytes(json);
@@ -46,6 +54,7 @@ public class GeminiRequester : MonoBehaviour
             Debug.Log("Emotion: " + res.emotion);
 
             dialogueText.text = res.response;
+            speaker.Speak(res.response);
 
             agentAnimator.SetBool("ConversationMode", false);
             switch (res.emotion)
@@ -82,6 +91,7 @@ public class GeminiRequester : MonoBehaviour
     public class RequestData
     {
         public string input;
+        public string boardState;
     }
 
     [System.Serializable]
