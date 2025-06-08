@@ -9,10 +9,12 @@ CORS(app)  # Allow Unity to access this server
 def ask():
     data = request.get_json()
     user_input = data.get("input", "")
+    board_state = data.get("boardState", "")
 
     print(f"[Flask] Received input: {user_input}")
+    print(f"[Flask] Received board: {board_state}")
     try:
-        response, emotion = get_gemini_response(user_input)
+        response, emotion = get_gemini_response(user_input, board_state)
         
         return jsonify({"response": response, "emotion": emotion})
     except Exception as e:

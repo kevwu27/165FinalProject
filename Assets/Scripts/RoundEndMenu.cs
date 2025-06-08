@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using Meta.WitAi.TTS;
+using Meta.WitAi.TTS.Utilities;
+using Meta.WitAi.TTS.Data;
 
 public class RoundEndMenu : MonoBehaviour
 {
@@ -10,10 +13,19 @@ public class RoundEndMenu : MonoBehaviour
     public Image resultImage;                 // UI image for "You Won"/"You Lost"
     public Sprite youWonSprite;               // Assign in Inspector
     public Sprite youLostSprite;              // Assign in Inspector
+    public TTSSpeaker speaker;
 
     public void ShowEndScreen(bool playerWon)
     {
         Debug.Log("ShowEndScreen called");
+        if (playerWon)
+        {
+            speaker.Speak("Good game!");
+        }
+        else
+        {
+            speaker.Speak("Better luck next time!");
+        }
         // Ensure animator is reset before playing again
         menuCanvas.SetActive(true);
         menuAnimator.Rebind();

@@ -4,6 +4,9 @@ using TMPro;
 using System.IO;
 using System.Collections;
 using UnityEngine.UI;
+using Meta.WitAi.TTS;
+using Meta.WitAi.TTS.Utilities;
+using Meta.WitAi.TTS.Data;
 
 public class TutorialManager : MonoBehaviour
 {
@@ -15,12 +18,11 @@ public class TutorialManager : MonoBehaviour
     private List<TutorialStep> steps;
     private int currentStep = 0;
 
-    public Button nextButton;
-    private bool isAnimating = false;
-
     [Header("Gameplay")]
     public GrabPiece grabPieceScript;
     public IntroMenu introMenu;
+
+    public TTSSpeaker speaker;
 
     public void StartTutorial()
     {
@@ -75,23 +77,24 @@ public class TutorialManager : MonoBehaviour
             if (step.animation == "Idle")
             {
                 dialogueText.text = step.text;
+                speaker.Speak(step.text);
                 currentStep++;
-                yield return new WaitForSeconds(2f);
+                yield return new WaitForSeconds(4f);
                 continue;
             }
             // Play animation
             agentAnimator.SetBool(step.animation, true);
-            isAnimating = true;
 
             // Wait for animation to start
             yield return new WaitUntil(() => agentAnimator.GetCurrentAnimatorStateInfo(0).IsName(step.animation));
 
             // Now display text once animation starts
             dialogueText.text = step.text;
+            speaker.Speak(step.text);
 
             // Wait for animation to finish
             yield return new WaitUntil(() =>
-                agentAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 0.85f
+                agentAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 0.95f
             );
             //  &&
             //     !agentAnimator.IsInTransition(0)
@@ -130,45 +133,6 @@ public class TutorialManager : MonoBehaviour
         agentAnimator.SetBool("TutorialMode", false);
         userInputField.gameObject.SetActive(true);
     }
-
-    // public void ShowCurrentStep()
-    // {
-    //     if (currentStep >= steps.Count)
-    //     {
-    //         return;
-    //     }
-
-    //     var step = steps[currentStep];
-    //     dialogueText.text = step.text;
-    //     if (step.animation == "Idle") return;
-    //     StartCoroutine(PlayBoolAnimation(step.animation, 2f));
-    // }
-
-    // IEnumerator PlayBoolAnimation(string paramName, float duration)
-    // {
-    //     agentAnimator.SetBool(paramName, true);
-    //     yield return new WaitForSeconds(duration);
-    //     agentAnimator.SetBool(paramName, false);
-    // }
-
-    // public void NextStep()
-    // {
-    //     currentStep++;
-    //     if (currentStep < steps.Count)
-    //     {
-    //         ShowCurrentStep();
-    //     }
-    //     else
-    //     {
-    //         Debug.Log("Tutorial finished!");
-    //         nextButton.gameObject.SetActive(false);
-    //         dialogueText.text = "";
-    //         agentAnimator.SetBool("ConversationMode", true);
-    //         agentAnimator.SetBool("TutorialMode", false);
-    //         userInputField.gameObject.SetActive(true);
-    //         // TODO: Switch to conversation mode
-    //     }
-    // }
 }
 
 [System.Serializable]
