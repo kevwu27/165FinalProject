@@ -316,18 +316,45 @@ public class CheckersLogic : MonoBehaviour
 
     public string PrintBoard()
     {
-        string boardStr = "";
+        string[,] symbols = new string[8,8];
+
         for (int row = 0; row < 8; row++)
         {
             for (int col = 0; col < 8; col++)
             {
-                int val = (int)boardState[row, col];
-                boardStr += $"{val,3}";
+                switch ((int)boardState[row, col])
+                {
+                    case 1:  symbols[row, col] = "b"; break; // Black
+                    case 2:  symbols[row, col] = "B"; break; // Black King
+                    case -1: symbols[row, col] = "w"; break; // White
+                    case -2: symbols[row, col] = "W"; break; // White King
+                    default: symbols[row, col] = "."; break; // Empty
+                }
             }
-            boardStr += "\n";
         }
-        // Debug.Log("Board State:\n" + boardStr);
-        return boardStr;
+
+        string result = "    A  B  C  D  E  F  G  H\n";
+        result += "  +------------------------+\n";
+
+        for (int row = 0; row < 8; row++)
+        {
+            result += (row + 1) + " | ";
+            for (int col = 0; col < 8; col++)
+            {
+                result += symbols[row, col] + "  ";
+            }
+            result += "|\n";
+        }
+
+        result += "  +------------------------+\n\n";
+        result += "Legend:\n";
+        result += "b = Black, B = Black King\n";
+        result += "w = White, W = White King\n";
+        result += ". = Empty\n";
+
+        Debug.Log(result);
+
+        return result;
     }
 
     public IEnumerator MakeAIMove()

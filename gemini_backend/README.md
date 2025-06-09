@@ -1,1 +1,0 @@
-In terminal, run "python app.py". Then start up Unity app like normal

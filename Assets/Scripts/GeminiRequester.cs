@@ -5,6 +5,9 @@ using TMPro;
 using Meta.WitAi.TTS;
 using Meta.WitAi.TTS.Utilities;
 using Meta.WitAi.TTS.Data;
+using Newtonsoft.Json;
+using System.Text;
+using System.Text.RegularExpressions;
 
 public class GeminiRequester : MonoBehaviour
 {
@@ -12,52 +15,87 @@ public class GeminiRequester : MonoBehaviour
     public TextMeshProUGUI dialogueText;
     public Animator agentAnimator;
 
+    private string endpoint = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyDRoj6IIG2wnmN9gl8Afg5rEfa8M-_KrHM";
+
     public TTSSpeaker speaker;
 
     public void SendToGemini(string userInput)
     {
         Debug.Log("sending to gemini: " + userInput);
-        StartCoroutine(PostRequest(userInput));
+        // StartCoroutine(PostRequest(userInput));
+        StartCoroutine(SendRequest(userInput));
     }
 
-    IEnumerator PostRequest(string text)
+    IEnumerator SendRequest(string userInput)
     {
-        string board_state = CheckersLogic.Instance.PrintBoard();
-        var input = new RequestData
+        string boardState = CheckersLogic.Instance.PrintBoard();
+        string prompt = $@"
+            You are an expressive VR game character inside a checkers game. You are here to guide the player in how to play checkers, but also in any other general requests. You are both the opponent of the user, and the teacher.
+            If the user's input is related to the checkers board or gameplay (e.g. asking about moves, rules, game progress), respond about the game and help the user win. Otherwise, respond normally.
+            The player is the black player, and you are the white player. When helping the player, give advice that would help them (the black pieces) win!
+
+            Respond briefly in 1–2 sentences.
+            Always include exactly one emotion tag at the end, chosen from: [Thankful, Headshake, Surprised, Offended].
+
+            Game Board:
+            {boardState}
+
+            User: {userInput}
+            Response:
+        ";
+
+        var requestData = new GeminiRequest
         {
-            input = text,
-            boardState = board_state
+            contents = new[] {
+                new Content
+                {
+                    parts = new[] {
+                        new Part 
+                        {
+                            text = prompt
+                        }
+                    }
+                }
+            }
         };
 
-        string json = JsonUtility.ToJson(input);
-        Debug.Log(json);
+        string json = JsonConvert.SerializeObject(requestData); // OR use Newtonsoft.Json for full support
 
-        var req = new UnityWebRequest("localhost:5001/ask", "POST");
-        byte[] jsonToSend = new System.Text.UTF8Encoding().GetBytes(json);
-        req.uploadHandler = new UploadHandlerRaw(jsonToSend);
-        req.downloadHandler = new DownloadHandlerBuffer();
-        req.SetRequestHeader("Content-Type", "application/json");
+        var request = new UnityWebRequest(endpoint, "POST");
+        byte[] bodyRaw = new System.Text.UTF8Encoding().GetBytes(json);
+        request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        request.downloadHandler = new DownloadHandlerBuffer();
+        request.SetRequestHeader("Content-Type", "application/json");
 
-        //Send the request then wait here until it returns
-        yield return req.SendWebRequest();
+        yield return request.SendWebRequest();
 
-        if (req.result != UnityWebRequest.Result.Success)
+        if (request.result == UnityWebRequest.Result.Success)
         {
-            Debug.Log("Error: " + req.error);
-        }
-        else
-        {
-            string result = req.downloadHandler.text;
-            GeminiResponse res = JsonUtility.FromJson<GeminiResponse>(result);
+            string result = request.downloadHandler.text;
+            Debug.Log("Raw Gemini response:\n" + result);
 
-            Debug.Log("Gemini says: " + res.response);
-            Debug.Log("Emotion: " + res.emotion);
+            GeminiResponse geminiResponse = JsonConvert.DeserializeObject<GeminiResponse>(result);
 
-            dialogueText.text = res.response;
-            speaker.Speak(res.response);
+            string response = geminiResponse.candidates[0].content.parts[0].text;
+            Debug.Log("Gemini says: " + response);
+
+            // Optional: Extract emotion tag using regex
+            string emotion = "Neutral";
+            var match = System.Text.RegularExpressions.Regex.Match(response, @"\[(\w+)\]$");
+            if (match.Success)
+            {
+                emotion = match.Groups[1].Value;
+                response = response.Replace(match.Value, "").Trim(); // remove tag from speech
+            }
+
+            Debug.Log("Gemini says: " + response);
+            Debug.Log("Emotion: " + emotion);
+
+            dialogueText.text = response;
+            speaker.Speak(response);
 
             agentAnimator.SetBool("ConversationMode", false);
-            switch (res.emotion)
+            switch (emotion)
             {
                 case "Thankful":
                     agentAnimator.SetBool("Thankful", true);
@@ -75,8 +113,11 @@ public class GeminiRequester : MonoBehaviour
                     break;
             }
 
-            // Optional: auto-reset after animation
-            StartCoroutine(ResetEmotion(res.emotion, 5f));
+            StartCoroutine(ResetEmotion(emotion, 5f));
+        }
+        else
+        {
+            Debug.LogError("Error: " + request.error);
         }
     }
 
@@ -85,6 +126,10 @@ public class GeminiRequester : MonoBehaviour
         yield return new WaitForSeconds(delay);
         agentAnimator.SetBool(paramName, false);
         agentAnimator.SetBool("ConversationMode", true);
+
+        yield return new WaitUntil(() => !speaker.IsSpeaking);
+        dialogueText.text = "";
+
     }
 
     [System.Serializable]
@@ -95,9 +140,45 @@ public class GeminiRequester : MonoBehaviour
     }
 
     [System.Serializable]
+    public class GeminiResponsePart
+    {
+        public string text;
+    }
+
+    [System.Serializable]
+    public class GeminiResponseContent
+    {
+        public GeminiResponsePart[] parts;
+    }
+
+    [System.Serializable]
+    public class GeminiResponseCandidate
+    {
+        public GeminiResponseContent content;
+        public string finishReason;
+    }
+
+    [System.Serializable]
     public class GeminiResponse
     {
-        public string response;
-        public string emotion;
+        public GeminiResponseCandidate[] candidates;
+    }
+
+    [System.Serializable]
+    public class Part
+    {
+        public string text;
+    }
+
+    [System.Serializable]
+    public class Content
+    {
+        public Part[] parts;
+    }
+
+    [System.Serializable]
+    public class GeminiRequest
+    {
+        public Content[] contents;
     }
 }

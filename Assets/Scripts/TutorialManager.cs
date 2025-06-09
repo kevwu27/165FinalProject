@@ -24,6 +24,8 @@ public class TutorialManager : MonoBehaviour
 
     public TTSSpeaker speaker;
 
+    public GameObject chatButton;
+
     public void StartTutorial()
     {
         LoadTutorial();
@@ -91,16 +93,12 @@ public class TutorialManager : MonoBehaviour
             // Now display text once animation starts
             dialogueText.text = step.text;
             speaker.Speak(step.text);
+            yield return new WaitUntil(() => !speaker.IsSpeaking);
 
             // Wait for animation to finish
             yield return new WaitUntil(() =>
                 agentAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime >= 0.95f
             );
-            //  &&
-            //     !agentAnimator.IsInTransition(0)
-
-            // // Optional delay between steps
-            // yield return new WaitForSeconds(step.delayBeforeNext);
 
             currentStep++;
         }
@@ -132,6 +130,7 @@ public class TutorialManager : MonoBehaviour
         agentAnimator.SetBool("ConversationMode", true);
         agentAnimator.SetBool("TutorialMode", false);
         userInputField.gameObject.SetActive(true);
+        chatButton.SetActive(true);
     }
 }
 
@@ -140,5 +139,4 @@ public class TutorialStep
 {
     public string text;
     public string animation;
-    // public float delayBeforeNext;
 }

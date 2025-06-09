@@ -1,6 +1,6 @@
 [
   {
-    "text": "Welcome to Checkers! I'm going to teach you how to play.",
+    "text": "Welcome to the Checkers Simulator! I'm going to teach you how to play.",
     "animation": "Idle"
   },
   {
@@ -12,7 +12,15 @@
     "animation": "Gesturing"
   },
   {
-    "text": "Try moving a piece to the highlighted square!",
+    "text": "If your piece reaches the end of the board, it becomes a king.",
+    "animation": "Pointing2"
+  },
+  {
+    "text": "Kings can move both diagonally forward and backward!",
+    "animation": "Gesturing2"
+  },
+  {
+    "text": "Let's get started! Use the right trigger button on your controller to select a piece.",
     "animation": "Cards"
   }
 ]
