@@ -35,6 +35,7 @@ public class CheckersLogic : MonoBehaviour
     public GameObject whiteKingPrefab;
     public GameObject blackCheckerPrefab;
     public GameObject whiteCheckerPrefab;
+    public AudioSource kingSound;
 
     public RoundEndMenu roundEndMenu;
     public bool gameOver = false;
@@ -312,6 +313,7 @@ public class CheckersLogic : MonoBehaviour
         piecePositions[kingPiece] = (row, col);
 
         Destroy(originalPiece);
+        kingSound?.Play();
     }
 
     public string PrintBoard()

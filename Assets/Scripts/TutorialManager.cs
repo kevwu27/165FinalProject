@@ -7,6 +7,7 @@ using UnityEngine.UI;
 using Meta.WitAi.TTS;
 using Meta.WitAi.TTS.Utilities;
 using Meta.WitAi.TTS.Data;
+using UnityEngine.Networking;
 
 public class TutorialManager : MonoBehaviour
 {
@@ -36,16 +37,40 @@ public class TutorialManager : MonoBehaviour
     void LoadTutorial()
     {
         string path = Path.Combine(Application.streamingAssetsPath, jsonFileName);
-        if (File.Exists(path))
+
+    #if UNITY_ANDROID && !UNITY_EDITOR
+        StartCoroutine(LoadFromStreamingAssets(path));
+    #else
+            if (File.Exists(path))
+            {
+                string json = File.ReadAllText(path);
+                steps = JsonUtilityWrapper.FromJsonList<TutorialStep>(json);
+            }
+            else
+            {
+                Debug.LogError("Tutorial JSON not found at " + path);
+            }
+    #endif
+    }
+
+    IEnumerator LoadFromStreamingAssets(string path)
+    {
+        using (UnityEngine.Networking.UnityWebRequest request = UnityEngine.Networking.UnityWebRequest.Get(path))
         {
-            string json = File.ReadAllText(path);
-            steps = JsonUtilityWrapper.FromJsonList<TutorialStep>(json);
-        }
-        else
-        {
-            Debug.LogError("Tutorial JSON not found at " + path);
+            yield return request.SendWebRequest();
+
+            if (request.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("Failed to load tutorial JSON: " + request.error);
+            }
+            else
+            {
+                string json = request.downloadHandler.text;
+                steps = JsonUtilityWrapper.FromJsonList<TutorialStep>(json);
+            }
         }
     }
+
 
     IEnumerator InitializeTutorial()
     {

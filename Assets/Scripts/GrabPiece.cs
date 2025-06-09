@@ -4,10 +4,11 @@ using UnityEngine;
 public class GrabPiece : MonoBehaviour
 {
     public LayerMask blackPieceLayer;
+    public AudioSource grabAudio;
+    public AudioSource placeAudio;
 
     private GameObject selectedPiece = null;
     private GameObject currentlyHovered = null;
-    private Vector3 pieceOffset;
     private Vector3 originalSnappedPosition;
 
     void Update()
@@ -18,7 +19,7 @@ public class GrabPiece : MonoBehaviour
         Ray ray = GlobalRaycaster.globalRay;
         bool triggerPressed = GlobalRaycaster.isTriggerPressed;
 
-        // Always do hover detection when not holding
+        // Hover highlight
         if (selectedPiece == null)
         {
             if (Physics.Raycast(ray, out RaycastHit hit, 40f, blackPieceLayer))
@@ -27,36 +28,33 @@ public class GrabPiece : MonoBehaviour
 
                 if (currentlyHovered != hitPiece)
                 {
-                    // Unhighlight previous
                     if (currentlyHovered != null)
                         currentlyHovered.GetComponent<HoverHighlight>()?.SetHighlight(false);
 
-                    // Highlight new
                     currentlyHovered = hitPiece;
                     currentlyHovered.GetComponent<HoverHighlight>()?.SetHighlight(true);
                 }
             }
             else if (currentlyHovered != null)
             {
-                // No longer hovering anything
                 currentlyHovered.GetComponent<HoverHighlight>()?.SetHighlight(false);
                 currentlyHovered = null;
             }
         }
 
-        // Handle selection and movement
+        // Handle selection
         if (triggerPressed)
         {
             if (selectedPiece == null && currentlyHovered != null)
             {
                 selectedPiece = currentlyHovered;
-
                 var boardCoords = CheckersLogic.Instance.WorldToBoard(selectedPiece.transform.position);
                 originalSnappedPosition = CheckersLogic.Instance.BoardToWorld(boardCoords.row, boardCoords.col);
+
+                grabAudio?.Play();  // Play grab sound
             }
             else if (selectedPiece != null)
             {
-                // While dragging
                 if (Physics.Raycast(ray, out RaycastHit hit))
                 {
                     var (row, col) = CheckersLogic.Instance.WorldToBoard(hit.point);
@@ -70,6 +68,7 @@ public class GrabPiece : MonoBehaviour
             if (CheckersLogic.Instance.IsValidMove(originalSnappedPosition, selectedPiece.transform.position))
             {
                 CheckersLogic.Instance.ApplyMove(originalSnappedPosition, selectedPiece.transform.position);
+                placeAudio?.Play();  // Play place sound
                 CheckersLogic.Instance.currentTurn = PlayerTurn.White;
                 StartCoroutine(CheckersLogic.Instance.MakeAIMove());
             }
@@ -78,7 +77,6 @@ public class GrabPiece : MonoBehaviour
                 selectedPiece.transform.position = originalSnappedPosition;
             }
 
-            // Clear highlight when releasing
             selectedPiece.GetComponent<HoverHighlight>()?.SetHighlight(false);
             selectedPiece = null;
         }
