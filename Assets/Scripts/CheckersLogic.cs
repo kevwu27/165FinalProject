@@ -335,26 +335,49 @@ public class CheckersLogic : MonoBehaviour
             }
         }
 
-        string result = "    A  B  C  D  E  F  G  H\n";
-        result += "  +------------------------+\n";
+        string print = "    A  B  C  D  E  F  G  H\n";
+        print += "  +------------------------+\n";
 
         for (int row = 7; row >= 0; row--)
         {
-            result += (row + 1) + " | ";
+            print += (row + 1) + " | ";
             for (int col = 0; col < 8; col++)
             {
-                result += symbols[row, col] + "  ";
+                print += symbols[row, col] + "  ";
             }
-            result += "|\n";
+            print += "|\n";
             
         }
+        Debug.Log(print);
 
-        result += "  +------------------------+\n\n";
+        string result = "  +------------------------+\n\n";
         result += "Legend:\n";
         result += "b = Black, B = Black King\n";
         result += "w = White, W = White King\n";
         result += ". = Empty\n";
 
+        result += "\nPiece Positions:\n";
+        for (int row = 0; row < 8; row++)
+        {
+            for (int col = 0; col < 8; col++)
+            {
+                int piece = (int)boardState[row, col];
+                if (piece != 0)
+                {
+                    char colLetter = (char)('A' + col);
+                    int rowNumber = row + 1;
+                    string pieceSymbol = piece switch
+                    {
+                        1 => "b",  // Black
+                        2 => "B",  // Black King
+                        -1 => "w", // White
+                        -2 => "W", // White King
+                        _ => "."
+                    };
+                    result += $"{pieceSymbol} at {colLetter}{rowNumber}\n";
+                }
+            }
+        }
         Debug.Log(result);
 
         return result;

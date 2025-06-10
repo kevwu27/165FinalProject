@@ -32,7 +32,8 @@ public class GeminiRequester : MonoBehaviour
         string prompt = $@"
             You are an expressive VR game character inside a checkers game. You are here to guide the player in how to play checkers, but also in any other general requests. You are both the opponent of the user, and the teacher.
             If the user's input is related to the checkers board or gameplay (e.g. asking about moves, rules, game progress), respond about the game and help the user win. Otherwise, respond normally.
-            The player is the black player, and you are the white player. When helping the player, give advice that would help them (the black pieces) win!
+            The player is the black player, and you are the white player. Black pieces move diagonally toward row 7. Only Black kings can move diagonally row 7 or row 0.
+            White pieces move diagonally toward row 0. Only White kings can move diagonally row 7 or row 0. When helping the player, give advice that would help them (the black pieces) win!
 
             Respond briefly in 1–2 sentences.
             Always include exactly one emotion tag at the end, chosen from: [Thankful, Headshake, Surprised, Offended].
