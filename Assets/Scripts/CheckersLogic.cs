@@ -338,7 +338,7 @@ public class CheckersLogic : MonoBehaviour
         string result = "    A  B  C  D  E  F  G  H\n";
         result += "  +------------------------+\n";
 
-        for (int row = 0; row < 8; row++)
+        for (int row = 7; row >= 0; row--)
         {
             result += (row + 1) + " | ";
             for (int col = 0; col < 8; col++)
@@ -346,6 +346,7 @@ public class CheckersLogic : MonoBehaviour
                 result += symbols[row, col] + "  ";
             }
             result += "|\n";
+            
         }
 
         result += "  +------------------------+\n\n";
